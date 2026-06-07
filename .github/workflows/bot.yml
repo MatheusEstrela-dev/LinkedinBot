@@ -1,0 +1,29 @@
+name: LinkedIn Job Bot
+
+on:
+  schedule:
+    - cron: '0 9,15,21 * * *'  # roda às 9h, 15h e 21h (UTC) todo dia
+  workflow_dispatch:             # permite rodar manualmente pelo GitHub
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run bot
+        env:
+          TELEGRAM_TOKEN:    ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID:  ${{ secrets.TELEGRAM_CHAT_ID }}
+          LI_EMAIL:          ${{ secrets.LI_EMAIL }}
+          LI_PASSWORD:       ${{ secrets.LI_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: uv run python main.py --once

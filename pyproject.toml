@@ -1,0 +1,16 @@
+[project]
+name = "linkedin-job-matcher"
+version = "0.1.0"
+description = "Monitora vagas no LinkedIn e faz match com seu perfil via Telegram"
+requires-python = ">=3.11"
+dependencies = [
+    "linkedin-jobs-scraper>=3.0.0",
+    "python-telegram-bot>=20.0",
+    "schedule",
+    "python-dotenv",
+    "anthropic>=0.40.0",
+]
+
+
+[dependency-groups]
+dev = []

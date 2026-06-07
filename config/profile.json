@@ -1,0 +1,64 @@
+{
+  "skills": [
+    "PHP",
+    "Laravel",
+    "Python",
+    "PostgreSQL",
+    "JavaScript",
+    "HTML",
+    "HTML5",
+    "CSS",
+    "SQL",
+    "Go",
+    "Azure",
+    "Git",
+    "GitHub",
+    "REST API",
+    "Mobile",
+    "IoT",
+    "Docker",
+    "Linux"
+  ],
+  "target_roles": [
+    "PYTHON",
+    "Desenvolvedor PHP Laravel",
+    "Full Stack Developer"
+  ],
+  "seniority": "pleno",
+  "location": "Belo Horizonte",
+  "accept_remote": true,
+  "min_salary": 5000,
+  "max_salary": 9000,
+  "min_score": 50,
+  "experience": [
+    {
+      "title": "Desenvolvedor Full Stack",
+      "company": "CEDEC/MG",
+      "duration_months": 11,
+      "skills": [
+        "PHP",
+        "Laravel"
+      ]
+    },
+    {
+      "title": "Fundador / Dev",
+      "company": "Cognito Inc",
+      "duration_months": 30,
+      "skills": [
+        "PHP",
+        "HTML5"
+      ]
+    },
+    {
+      "title": "Analista de Sistemas",
+      "company": "Banco Mercantil",
+      "duration_months": 22,
+      "skills": [
+        "Excel",
+        "ERP"
+      ]
+    }
+  ],
+  "education": "PUC Minas — Análise e Desenvolvimento de Sistemas (2024–2026)",
+  "total_experience_years": 4
+}

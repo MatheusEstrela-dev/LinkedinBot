@@ -1,0 +1,8 @@
+{
+  "pythonVersion": "3.12",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonPlatform": "Linux",
+  "include": ["."],
+  "extraPaths": ["/home/matheus/Documentos/LinkedinBot"]
+}
