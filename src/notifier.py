@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 
 from telegram import Bot
 from telegram.constants import ParseMode
@@ -24,7 +25,8 @@ def _get_chat_id() -> str:
 
 def _build_message(job: dict, score: int, breakdown: dict) -> str:
     stars = "⭐" * (score // 20)
-    remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {job.get('location', '?')}"
+    location = _esc(job.get("location") or "?")
+    remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {location}"
 
     salary_txt = ""
     if job.get("salary"):
@@ -36,9 +38,9 @@ def _build_message(job: dict, score: int, breakdown: dict) -> str:
 
     skills_txt = ""
     if matched:
-        skills_txt += f"\n✅ Skills: {', '.join(matched)}"
+        skills_txt += f"\n✅ Skills: {', '.join(_esc(s) for s in matched)}"
     if missing:
-        skills_txt += f"\n❌ Faltando: {', '.join(missing)}"
+        skills_txt += f"\n❌ Faltando: {', '.join(_esc(s) for s in missing)}"
 
     return (
         f"{stars} *Score: {score}/100*\n"
@@ -58,12 +60,21 @@ def _esc(text: str) -> str:
 async def _send_async(message: str):
     bot = _get_bot()
     chat_id = _get_chat_id()
-    await bot.send_message(
-        chat_id=chat_id,
-        text=message,
-        parse_mode=ParseMode.MARKDOWN_V2,
-        disable_web_page_preview=True,
-    )
+    try:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=message,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            disable_web_page_preview=True,
+        )
+    except Exception as exc:
+        logger.warning("MarkdownV2 falhou (%s) — enviando como texto simples", exc)
+        plain = re.sub(r'\\([_*\[\]()~`>#+=|{}.!\-])', r'\1', message)
+        await bot.send_message(
+            chat_id=chat_id,
+            text=plain,
+            disable_web_page_preview=True,
+        )
 
 
 def send(job: dict, score: int, breakdown: dict):
