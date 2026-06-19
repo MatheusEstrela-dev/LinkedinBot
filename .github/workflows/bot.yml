@@ -19,11 +19,30 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      # Restaura o banco de vagas já vistas do run anterior (evita reenviar duplicatas).
+      # Cada run grava um cache com chave única; restore-keys pega o mais recente.
+      - name: Restore jobs database
+        uses: actions/cache/restore@v4
+        with:
+          path: data/jobs.db
+          key: jobs-db-${{ github.run_id }}
+          restore-keys: |
+            jobs-db-
+
       - name: Run bot
         env:
           TELEGRAM_TOKEN:    ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID:  ${{ secrets.TELEGRAM_CHAT_ID }}
           LI_EMAIL:          ${{ secrets.LI_EMAIL }}
           LI_PASSWORD:       ${{ secrets.LI_PASSWORD }}
+          LI_AT_COOKIE:      ${{ secrets.LI_AT_COOKIE }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: uv run python main.py --once
+
+      # Persiste o banco atualizado para o próximo run (mesmo se o bot falhar).
+      - name: Save jobs database
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/jobs.db
+          key: jobs-db-${{ github.run_id }}
