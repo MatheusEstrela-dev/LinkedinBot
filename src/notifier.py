@@ -24,7 +24,9 @@ def _get_chat_id() -> str:
 
 def _build_message(job: dict, score: int, breakdown: dict) -> str:
     stars = "⭐" * (score // 20)
-    remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {job.get('location', '?')}"
+    remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {_esc(job.get('location') or '?')}"
+    if job.get("international"):
+        remote_tag = f"🌎 Internacional \\(remoto\\) — {_esc(job.get('location') or '?')}"
 
     salary_txt = ""
     if job.get("salary"):
@@ -64,6 +66,19 @@ async def _send_async(message: str):
         parse_mode=ParseMode.MARKDOWN_V2,
         disable_web_page_preview=True,
     )
+
+
+async def _send_alert_async(text: str):
+    bot = _get_bot()
+    await bot.send_message(chat_id=_get_chat_id(), text=text)
+
+
+def send_alert(text: str):
+    """Envia um aviso operacional (texto puro) para o chat."""
+    try:
+        asyncio.run(_send_alert_async(f"⚠️ LinkedinBot: {text}"))
+    except Exception as exc:
+        logger.error("Telegram error ao enviar alerta: %s", exc)
 
 
 def send(job: dict, score: int, breakdown: dict):

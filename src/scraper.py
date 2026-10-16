@@ -93,13 +93,59 @@ def fetch_jobs(profile: dict) -> list[dict]:
                     break
             else:
                 logger.warning("Renovação falhou — retornando %d vagas coletadas", len(results))
+                from . import notifier
+                notifier.send_alert(
+                    "o cookie do LinkedIn expirou e o login automático falhou, "
+                    "então nenhuma vaga está sendo buscada. Atualize o secret "
+                    "LI_AT_COOKIE no GitHub (Settings → Secrets → Actions)."
+                )
                 break
         except Exception as exc:
             logger.error("Erro ao buscar '%s': %s", role, exc)
             break
 
+    if not results:
+        logger.warning("Scraper com navegador não achou vagas — usando API pública (guest)")
+        from . import guest_scraper
+        params = {"f_TPR": "r604800", "f_E": ",".join(f.value for f in exp_filters)}
+        if remote_filters:
+            params["f_WT"] = ",".join(f.value for f in remote_filters)
+        for role in profile.get("target_roles", []):
+            for job in guest_scraper.search(role, locations[0], params):
+                job["salary"] = _extract_salary(job["description"])
+                job["remote"] = _is_remote(job["location"], job["description"])
+                results.append(job)
+
+    intl = profile.get("international") or {}
+    if intl.get("enabled"):
+        results.extend(_fetch_international(intl, profile, exp_filters, {j["id"] for j in results}))
+
     logger.info("Scraper encontrou %d vagas no total", len(results))
     return results
+
+
+def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) -> list[dict]:
+    """Vagas remotas fora do Brasil, via API pública (termos em inglês)."""
+    from . import guest_scraper
+
+    params = {
+        "f_TPR": "r604800",
+        "f_E": ",".join(f.value for f in exp_filters),
+        "f_WT": OnSiteOrRemoteFilters.REMOTE.value,
+    }
+    found: list[dict] = []
+    for role in intl.get("roles") or profile.get("target_roles", []):
+        for location in intl.get("locations", ["Worldwide"]):
+            for job in guest_scraper.search(role, location, params, limit=intl.get("limit", 15)):
+                if job["id"] in seen_ids:
+                    continue
+                seen_ids.add(job["id"])
+                job["salary"] = _extract_salary(job["description"])
+                job["remote"] = True
+                job["international"] = True
+                found.append(job)
+    logger.info("Busca internacional: %d vagas", len(found))
+    return found
 
 
 def _extract_salary(description: str) -> tuple[int, int] | None:
