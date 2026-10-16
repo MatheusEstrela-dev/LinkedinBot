@@ -1,4 +1,5 @@
 import logging
+import re
 
 from linkedin_jobs_scraper import LinkedinScraper
 from linkedin_jobs_scraper.events import EventData, Events
@@ -143,7 +144,12 @@ def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) 
                 if job["id"] in seen_ids:
                     continue
                 seen_ids.add(job["id"])
+                # A API às vezes ignora o filtro de remoto: descarta híbridas/presenciais.
+                text = f"{job['title']} {job['location']} {job['description']}".lower()
+                if "hybrid" in text or "híbrid" in text or not _is_remote(text, ""):
+                    continue
                 job["salary"] = _extract_salary(job["description"])
+                job["language"] = _detect_language(f"{job['title']} {job['description']}")
                 job["remote"] = True
                 job["international"] = True
                 found.append(job)
@@ -166,7 +172,25 @@ def _extract_salary(description: str) -> tuple[int, int] | None:
     return None
 
 
+_LANG_WORDS = {
+    "Inglês":    {"the", "and", "with", "you", "we", "our", "will", "experience", "team", "for"},
+    "Espanhol":  {"el", "los", "las", "con", "para", "una", "experiencia", "trabajo", "del", "y"},
+    "Português": {"os", "com", "para", "uma", "experiência", "você", "nossa", "trabalho", "do", "e"},
+    "Francês":   {"le", "les", "des", "avec", "pour", "une", "vous", "nous", "et", "expérience"},
+    "Alemão":    {"der", "die", "und", "mit", "für", "wir", "sie", "ein", "erfahrung", "ist"},
+    "Italiano":  {"il", "gli", "con", "per", "una", "esperienza", "lavoro", "della", "che", "siamo"},
+}
+
+
+def _detect_language(text: str) -> str:
+    """Idioma provável da vaga, contando palavras comuns de cada língua."""
+    words = re.findall(r"[a-zà-ÿ]+", text.lower())
+    counts = {lang: sum(w in vocab for w in words) for lang, vocab in _LANG_WORDS.items()}
+    lang, hits = max(counts.items(), key=lambda kv: kv[1])
+    return lang if hits >= 3 else "Não identificado"
+
+
 def _is_remote(place: str, description: str) -> bool:
-    keywords = ("remote", "remoto", "home office", "anywhere")
+    keywords = ("remote", "remoto", "home office", "anywhere", "teletrabajo", "télétravail")
     combined = (place + " " + description).lower()
     return any(kw in combined for kw in keywords)

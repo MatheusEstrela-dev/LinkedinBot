@@ -39,10 +39,14 @@ def run_pipeline():
         notifier.send_alert("a busca terminou com 0 vagas — verifique o log do GitHub Actions.")
 
     notified = 0
+    seen_titles: set[tuple[str, str]] = set()
     for job in jobs:
         job_id = job.get("id")
-        if not job_id or database.seen(job_id):
+        # Mesma vaga repostada com outro ID (ex.: uma por país) conta como repetida.
+        title_key = (job["title"].strip().lower(), job["company"].strip().lower())
+        if not job_id or title_key in seen_titles or database.seen(job_id, *title_key):
             continue
+        seen_titles.add(title_key)
 
         total, breakdown = matcher.score(job, profile)
         logger.info("  [%3d] %s — %s", total, job["title"], job["company"])

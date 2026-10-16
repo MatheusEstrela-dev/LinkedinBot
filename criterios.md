@@ -64,9 +64,13 @@ Se `international.enabled` for `true`, o bot faz uma busca extra:
 
 - Cargos em inglês: `international.roles` (ex.: `"Python Developer"`, `"Laravel Developer"`).
 - Locais: `international.locations` (ex.: `"Worldwide"`, `"Latin America"`).
-- **Somente vagas 100% remotas.**
+- **Somente vagas 100% remotas**: a vaga precisa citar remote/remoto/teletrabajo/télétravail
+  e não pode citar hybrid/híbrido (a API às vezes ignora o filtro de remoto).
 - Até `international.limit` vagas por combinação cargo × local.
-- No Telegram aparecem com a etiqueta **🌎 Internacional (remoto)**.
+- No Telegram aparecem com a etiqueta **🌎 Internacional (remoto)** e o
+  **🗣 idioma** da vaga (Inglês, Espanhol, Francês, Alemão, Italiano ou Português).
+  O idioma é estimado contando palavras comuns de cada língua no título + descrição;
+  sem descrição, aparece "Não identificado".
 
 ---
 
@@ -152,6 +156,8 @@ O salário é lido da descrição, só nestes formatos:
 
 - Só vagas com **score ≥ `min_score`** (hoje **50**) vão para o Telegram.
 - Cada vaga enviada é salva em `data/jobs.db` e **nunca é reenviada**.
+  Conta como a mesma vaga: mesmo ID **ou** mesmo título + empresa (empresas que
+  repostam a vaga em vários países com IDs diferentes).
   O banco é mantido entre execuções pelo cache do GitHub Actions.
 - Vagas abaixo do corte **não** são salvas (são reavaliadas na próxima busca,
   mas o score tende a ser o mesmo).

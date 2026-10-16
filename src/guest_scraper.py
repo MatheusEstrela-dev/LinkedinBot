@@ -7,6 +7,7 @@ import html
 import logging
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -24,10 +25,20 @@ _HEADERS = {
 _PAGE_SIZE = 10
 
 
-def _get(url: str) -> str:
+def _get(url: str, retries: int = 3) -> str:
+    """GET com nova tentativa quando o LinkedIn limita (HTTP 429)."""
     req = urllib.request.Request(url, headers=_HEADERS)
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt == retries:
+                raise
+            wait = 5 * (attempt + 1) ** 2  # 5s, 20s, 45s
+            logger.info("LinkedIn limitou (429) — aguardando %ds", wait)
+            time.sleep(wait)
+    raise RuntimeError("unreachable")
 
 
 def _text(fragment: str) -> str:
@@ -83,12 +94,12 @@ def search(role: str, location: str, params: dict, limit: int = 25) -> list[dict
         if not cards:
             break
         found.extend(cards)
-        time.sleep(1)
+        time.sleep(2)
 
     found = found[:limit]
     for job in found:
         job["description"] = _fetch_description(job["id"])
-        time.sleep(0.5)
+        time.sleep(1.5)
 
     logger.info("[guest] '%s': %d vagas", role, len(found))
     return found
