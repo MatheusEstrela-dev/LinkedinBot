@@ -35,6 +35,8 @@ def run_pipeline():
     logger.info("Starting pipeline...")
     jobs = scraper.fetch_jobs(profile)
     logger.info("Found %d jobs", len(jobs))
+    if not jobs:
+        notifier.send_alert("a busca terminou com 0 vagas — verifique o log do GitHub Actions.")
 
     notified = 0
     for job in jobs:

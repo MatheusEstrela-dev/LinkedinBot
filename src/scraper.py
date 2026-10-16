@@ -104,6 +104,18 @@ def fetch_jobs(profile: dict) -> list[dict]:
             logger.error("Erro ao buscar '%s': %s", role, exc)
             break
 
+    if not results:
+        logger.warning("Scraper com navegador não achou vagas — usando API pública (guest)")
+        from . import guest_scraper
+        params = {"f_TPR": "r604800", "f_E": ",".join(f.value for f in exp_filters)}
+        if remote_filters:
+            params["f_WT"] = ",".join(f.value for f in remote_filters)
+        for role in profile.get("target_roles", []):
+            for job in guest_scraper.search(role, locations[0], params):
+                job["salary"] = _extract_salary(job["description"])
+                job["remote"] = _is_remote(job["location"], job["description"])
+                results.append(job)
+
     logger.info("Scraper encontrou %d vagas no total", len(results))
     return results
 
