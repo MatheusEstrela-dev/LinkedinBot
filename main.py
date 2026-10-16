@@ -65,7 +65,8 @@ def main():
     database.init()
 
     # Se não tiver cookie mas tiver email/senha, faz login automático
-    if not os.environ.get("LI_AT_COOKIE") and os.environ.get("LI_EMAIL"):
+    if (load_profile().get("browser_scraper")
+            and not os.environ.get("LI_AT_COOKIE") and os.environ.get("LI_EMAIL")):
         from src import auth
         auth.refresh_cookie()
 

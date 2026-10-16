@@ -12,9 +12,8 @@ GitHub Actions (9h, 15h, 21h de Brasília)
         │
         ▼
 main.py ──► scraper.py ──► busca vagas no LinkedIn
-        │                    ├─ 1º: navegador logado (linkedin-jobs-scraper + cookie li_at)
-        │                    ├─ 2º: se não achou nada → API pública (guest_scraper.py)
-        │                    └─ 3º: busca internacional (se "international.enabled")
+        │                    ├─ API pública do LinkedIn (guest_scraper.py) — sem login
+        │                    └─ busca internacional (se "international.enabled")
         ▼
    para cada vaga:
         ├─ já foi enviada antes? (data/jobs.db) ──► sim: ignora
@@ -30,7 +29,11 @@ main.py ──► scraper.py ──► busca vagas no LinkedIn
 | `src/matcher.py` | **Regras de pontuação (match).** |
 | `src/database.py` | Guarda as vagas já enviadas, para não repetir. |
 | `src/notifier.py` | Monta e envia a mensagem no Telegram, e envia alertas. |
-| `src/auth.py` | Tenta renovar o cookie do LinkedIn com e-mail/senha. |
+| `src/auth.py` | Login com e-mail/senha (só usado se `browser_scraper` estiver ligado). |
+
+> O scraper com navegador + cookie `li_at` está **desligado** por padrão: o LinkedIn
+> derruba o cookie quando ele é usado pelos servidores do GitHub. Para religar,
+> coloque `"browser_scraper": true` no `profile.json` (aí volta o aviso de cookie expirado).
 
 ---
 
@@ -181,10 +184,8 @@ O salário é lido da descrição, só nestes formatos:
 
 ## 5. Alertas no Telegram
 
-Além das vagas, o bot manda **⚠️ avisos** quando:
+Além das vagas, o bot manda **⚠️ aviso** quando:
 
-- O cookie do LinkedIn expirou e o login automático falhou
-  → atualize o secret `LI_AT_COOKIE` no GitHub.
 - A busca terminou com **0 vagas** → veja o log em *Actions* no GitHub.
 
 ---
