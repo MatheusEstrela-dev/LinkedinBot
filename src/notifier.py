@@ -66,6 +66,19 @@ async def _send_async(message: str):
     )
 
 
+async def _send_alert_async(text: str):
+    bot = _get_bot()
+    await bot.send_message(chat_id=_get_chat_id(), text=text)
+
+
+def send_alert(text: str):
+    """Envia um aviso operacional (texto puro) para o chat."""
+    try:
+        asyncio.run(_send_alert_async(f"⚠️ LinkedinBot: {text}"))
+    except Exception as exc:
+        logger.error("Telegram error ao enviar alerta: %s", exc)
+
+
 def send(job: dict, score: int, breakdown: dict):
     message = _build_message(job, score, breakdown)
     try:

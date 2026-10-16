@@ -93,6 +93,12 @@ def fetch_jobs(profile: dict) -> list[dict]:
                     break
             else:
                 logger.warning("Renovação falhou — retornando %d vagas coletadas", len(results))
+                from . import notifier
+                notifier.send_alert(
+                    "o cookie do LinkedIn expirou e o login automático falhou, "
+                    "então nenhuma vaga está sendo buscada. Atualize o secret "
+                    "LI_AT_COOKIE no GitHub (Settings → Secrets → Actions)."
+                )
                 break
         except Exception as exc:
             logger.error("Erro ao buscar '%s': %s", role, exc)
