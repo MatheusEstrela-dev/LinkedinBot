@@ -207,6 +207,7 @@ Tudo em `config/profile.json`:
 | Buscar outros cargos | edite `target_roles` |
 | Pontuar mais alto em skills | deixe em `skills` só o que é essencial |
 | Mudar faixa salarial | `min_salary` / `max_salary` |
+| Limitar o tempo da busca (padrão 15 min) | `search_budget_minutes` |
 | Desligar vagas internacionais | `"international": { "enabled": false }` |
 | Mudar países/regiões internacionais | `international.locations` (ex.: `"United States"`, `"European Union"`) |
 

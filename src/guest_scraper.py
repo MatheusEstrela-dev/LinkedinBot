@@ -24,6 +24,20 @@ _HEADERS = {
 }
 _PAGE_SIZE = 10
 
+# Prazo global da busca: passado esse ponto, o bot para de pedir páginas e
+# descrições e segue com o que já coletou, para nunca estourar o timeout do
+# GitHub Actions sem ter enviado nenhuma vaga.
+_deadline: float | None = None
+
+
+def start_budget(seconds: float) -> None:
+    global _deadline
+    _deadline = time.monotonic() + seconds
+
+
+def _time_left() -> float:
+    return float("inf") if _deadline is None else _deadline - time.monotonic()
+
 
 def _get(url: str, retries: int = 3) -> str:
     """GET com nova tentativa quando o LinkedIn limita (HTTP 429)."""
@@ -36,6 +50,8 @@ def _get(url: str, retries: int = 3) -> str:
             if exc.code != 429 or attempt == retries:
                 raise
             wait = 5 * (attempt + 1) ** 2  # 5s, 20s, 45s
+            if wait >= _time_left():
+                raise
             logger.info("LinkedIn limitou (429) — aguardando %ds", wait)
             time.sleep(wait)
     raise RuntimeError("unreachable")
@@ -71,8 +87,10 @@ def _parse_cards(page: str) -> list[dict]:
 
 
 def _fetch_description(job_id: str) -> str:
+    if _time_left() <= 0:
+        return ""
     try:
-        page = _get(_DETAIL_URL.format(job_id=job_id))
+        page = _get(_DETAIL_URL.format(job_id=job_id), retries=1)
     except Exception as exc:
         logger.warning("Sem descrição para vaga %s: %s", job_id, exc)
         return ""
@@ -82,6 +100,9 @@ def _fetch_description(job_id: str) -> str:
 def search(role: str, location: str, params: dict, limit: int = 25) -> list[dict]:
     """Retorna vagas no formato {id, title, company, location, link, description}."""
     found: list[dict] = []
+    if _time_left() <= 0:
+        logger.warning("[guest] prazo da busca esgotado — pulando '%s' (%s)", role, location)
+        return found
     for start in range(0, limit, _PAGE_SIZE):
         query = {"keywords": role, "location": location, "sortBy": "DD",
                  "start": start, **params}
