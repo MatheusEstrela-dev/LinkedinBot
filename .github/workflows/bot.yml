@@ -2,7 +2,10 @@ name: LinkedIn Job Bot
 
 on:
   schedule:
-    - cron: '0 0,12,18 * * *'  # 9h, 15h e 21h de Brasília (12h, 18h e 0h UTC) todo dia
+    # 9h07, 15h07 e 21h07 de Brasília (12h07, 18h07 e 0h07 UTC) todo dia.
+    # Minuto 7 em vez de 0: no início da hora o GitHub fica sobrecarregado e pode
+    # atrasar muito ou até pular execuções agendadas.
+    - cron: '7 0,12,18 * * *'
   workflow_dispatch:           # permite rodar manualmente pelo GitHub
 
 permissions:
@@ -12,11 +15,13 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       # O GitHub desativa workflows agendados após 60 dias sem atividade no repo.
       # Reativar o workflow via API a cada run reinicia esse contador.
       - name: Keepalive
+        continue-on-error: true   # se falhar, não impede a busca de vagas
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/bot.yml/enable"
@@ -58,3 +63,15 @@ jobs:
         with:
           path: data/jobs.db
           key: jobs-db-${{ github.run_id }}
+
+      # Se qualquer etapa quebrar, avisa no Telegram (em vez de falhar em silêncio).
+      - name: Avisar falha no Telegram
+        if: failure()
+        env:
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=⚠️ LinkedinBot: a execução falhou. Log: ${RUN_URL}"

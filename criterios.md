@@ -8,7 +8,7 @@ Tudo o que é configurável fica em [`config/profile.json`](config/profile.json)
 ## 1. Fluxo geral
 
 ```
-GitHub Actions (9h, 15h, 21h de Brasília)
+GitHub Actions (9h07, 15h07, 21h07 de Brasília)
         │
         ▼
 main.py ──► scraper.py ──► busca vagas no LinkedIn
@@ -211,4 +211,4 @@ Tudo em `config/profile.json`:
 | Mudar países/regiões internacionais | `international.locations` (ex.: `"United States"`, `"European Union"`) |
 
 Horários de execução: `.github/workflows/bot.yml`, linha `cron`
-(o horário é em **UTC** — Brasília = UTC − 3).
+(o horário é em **UTC** — Brasília = UTC − 3; roda no minuto 7 para evitar a sobrecarga do GitHub no início da hora).
