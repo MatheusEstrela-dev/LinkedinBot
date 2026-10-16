@@ -12,9 +12,8 @@ GitHub Actions (9h, 15h, 21h de Brasília)
         │
         ▼
 main.py ──► scraper.py ──► busca vagas no LinkedIn
-        │                    ├─ 1º: navegador logado (linkedin-jobs-scraper + cookie li_at)
-        │                    ├─ 2º: se não achou nada → API pública (guest_scraper.py)
-        │                    └─ 3º: busca internacional (se "international.enabled")
+        │                    ├─ API pública do LinkedIn (guest_scraper.py) — sem login
+        │                    └─ busca internacional (se "international.enabled")
         ▼
    para cada vaga:
         ├─ já foi enviada antes? (data/jobs.db) ──► sim: ignora
@@ -30,7 +29,11 @@ main.py ──► scraper.py ──► busca vagas no LinkedIn
 | `src/matcher.py` | **Regras de pontuação (match).** |
 | `src/database.py` | Guarda as vagas já enviadas, para não repetir. |
 | `src/notifier.py` | Monta e envia a mensagem no Telegram, e envia alertas. |
-| `src/auth.py` | Tenta renovar o cookie do LinkedIn com e-mail/senha. |
+| `src/auth.py` | Login com e-mail/senha (só usado se `browser_scraper` estiver ligado). |
+
+> O scraper com navegador + cookie `li_at` está **desligado** por padrão: o LinkedIn
+> derruba o cookie quando ele é usado pelos servidores do GitHub. Para religar,
+> coloque `"browser_scraper": true` no `profile.json` (aí volta o aviso de cookie expirado).
 
 ---
 
@@ -61,9 +64,13 @@ Se `international.enabled` for `true`, o bot faz uma busca extra:
 
 - Cargos em inglês: `international.roles` (ex.: `"Python Developer"`, `"Laravel Developer"`).
 - Locais: `international.locations` (ex.: `"Worldwide"`, `"Latin America"`).
-- **Somente vagas 100% remotas.**
+- **Somente vagas 100% remotas**: a vaga precisa citar remote/remoto/teletrabajo/télétravail
+  e não pode citar hybrid/híbrido (a API às vezes ignora o filtro de remoto).
 - Até `international.limit` vagas por combinação cargo × local.
-- No Telegram aparecem com a etiqueta **🌎 Internacional (remoto)**.
+- No Telegram aparecem com a etiqueta **🌎 Internacional (remoto)** e o
+  **🗣 idioma** da vaga (Inglês, Espanhol, Francês, Alemão, Italiano ou Português).
+  O idioma é estimado contando palavras comuns de cada língua no título + descrição;
+  sem descrição, aparece "Não identificado".
 
 ---
 
@@ -149,6 +156,8 @@ O salário é lido da descrição, só nestes formatos:
 
 - Só vagas com **score ≥ `min_score`** (hoje **50**) vão para o Telegram.
 - Cada vaga enviada é salva em `data/jobs.db` e **nunca é reenviada**.
+  Conta como a mesma vaga: mesmo ID **ou** mesmo título + empresa (empresas que
+  repostam a vaga em vários países com IDs diferentes).
   O banco é mantido entre execuções pelo cache do GitHub Actions.
 - Vagas abaixo do corte **não** são salvas (são reavaliadas na próxima busca,
   mas o score tende a ser o mesmo).
@@ -181,10 +190,8 @@ O salário é lido da descrição, só nestes formatos:
 
 ## 5. Alertas no Telegram
 
-Além das vagas, o bot manda **⚠️ avisos** quando:
+Além das vagas, o bot manda **⚠️ aviso** quando:
 
-- O cookie do LinkedIn expirou e o login automático falhou
-  → atualize o secret `LI_AT_COOKIE` no GitHub.
 - A busca terminou com **0 vagas** → veja o log em *Actions* no GitHub.
 
 ---

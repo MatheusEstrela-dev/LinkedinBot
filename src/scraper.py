@@ -1,4 +1,5 @@
 import logging
+import re
 
 from linkedin_jobs_scraper import LinkedinScraper
 from linkedin_jobs_scraper.events import EventData, Events
@@ -63,49 +64,52 @@ def fetch_jobs(profile: dict) -> list[dict]:
     if not profile.get("accept_remote") and profile.get("location"):
         locations = [profile["location"]]
 
-    for role in profile.get("target_roles", []):
-        query = Query(
-            query=role,
-            options=QueryOptions(
-                locations=locations,
-                apply_link=False,
-                limit=25,
-                filters=QueryFilters(
-                    relevance=RelevanceFilters.RECENT,
-                    time=TimeFilters.WEEK,
-                    experience=exp_filters,
-                    on_site_or_remote=remote_filters or None,
+    # Scraper com navegador (login via cookie). Desligado por padrão: o LinkedIn
+    # derruba o cookie quando usado pelo GitHub Actions e a página logada não
+    # retorna vagas para a biblioteca. A API pública abaixo cobre a busca.
+    if profile.get("browser_scraper"):
+        for role in profile.get("target_roles", []):
+            query = Query(
+                query=role,
+                options=QueryOptions(
+                    locations=locations,
+                    apply_link=False,
+                    limit=25,
+                    filters=QueryFilters(
+                        relevance=RelevanceFilters.RECENT,
+                        time=TimeFilters.WEEK,
+                        experience=exp_filters,
+                        on_site_or_remote=remote_filters or None,
+                    ),
                 ),
-            ),
-        )
-        scraper = _build_scraper(on_data, on_error)
-        try:
-            scraper.run(query)
-        except InvalidCookieException:
-            logger.warning("Cookie expirado — tentando renovar automaticamente...")
-            new_cookie = _auth.refresh_cookie()
-            if new_cookie:
-                scraper = _build_scraper(on_data, on_error)
-                try:
-                    scraper.run(query)
-                except Exception as exc:
-                    logger.error("Falhou mesmo após renovação: %s", exc)
+            )
+            scraper = _build_scraper(on_data, on_error)
+            try:
+                scraper.run(query)
+            except InvalidCookieException:
+                logger.warning("Cookie expirado — tentando renovar automaticamente...")
+                new_cookie = _auth.refresh_cookie()
+                if new_cookie:
+                    scraper = _build_scraper(on_data, on_error)
+                    try:
+                        scraper.run(query)
+                    except Exception as exc:
+                        logger.error("Falhou mesmo após renovação: %s", exc)
+                        break
+                else:
+                    logger.warning("Renovação falhou — retornando %d vagas coletadas", len(results))
+                    from . import notifier
+                    notifier.send_alert(
+                        "o cookie do LinkedIn expirou e o login automático falhou, "
+                        "então nenhuma vaga está sendo buscada. Atualize o secret "
+                        "LI_AT_COOKIE no GitHub (Settings → Secrets → Actions)."
+                    )
                     break
-            else:
-                logger.warning("Renovação falhou — retornando %d vagas coletadas", len(results))
-                from . import notifier
-                notifier.send_alert(
-                    "o cookie do LinkedIn expirou e o login automático falhou, "
-                    "então nenhuma vaga está sendo buscada. Atualize o secret "
-                    "LI_AT_COOKIE no GitHub (Settings → Secrets → Actions)."
-                )
+            except Exception as exc:
+                logger.error("Erro ao buscar '%s': %s", role, exc)
                 break
-        except Exception as exc:
-            logger.error("Erro ao buscar '%s': %s", role, exc)
-            break
 
     if not results:
-        logger.warning("Scraper com navegador não achou vagas — usando API pública (guest)")
         from . import guest_scraper
         params = {"f_TPR": "r604800", "f_E": ",".join(f.value for f in exp_filters)}
         if remote_filters:
@@ -140,7 +144,12 @@ def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) 
                 if job["id"] in seen_ids:
                     continue
                 seen_ids.add(job["id"])
+                # A API às vezes ignora o filtro de remoto: descarta híbridas/presenciais.
+                text = f"{job['title']} {job['location']} {job['description']}".lower()
+                if "hybrid" in text or "híbrid" in text or not _is_remote(text, ""):
+                    continue
                 job["salary"] = _extract_salary(job["description"])
+                job["language"] = _detect_language(f"{job['title']} {job['description']}")
                 job["remote"] = True
                 job["international"] = True
                 found.append(job)
@@ -163,7 +172,25 @@ def _extract_salary(description: str) -> tuple[int, int] | None:
     return None
 
 
+_LANG_WORDS = {
+    "Inglês":    {"the", "and", "with", "you", "we", "our", "will", "experience", "team", "for"},
+    "Espanhol":  {"el", "los", "las", "con", "para", "una", "experiencia", "trabajo", "del", "y"},
+    "Português": {"os", "com", "para", "uma", "experiência", "você", "nossa", "trabalho", "do", "e"},
+    "Francês":   {"le", "les", "des", "avec", "pour", "une", "vous", "nous", "et", "expérience"},
+    "Alemão":    {"der", "die", "und", "mit", "für", "wir", "sie", "ein", "erfahrung", "ist"},
+    "Italiano":  {"il", "gli", "con", "per", "una", "esperienza", "lavoro", "della", "che", "siamo"},
+}
+
+
+def _detect_language(text: str) -> str:
+    """Idioma provável da vaga, contando palavras comuns de cada língua."""
+    words = re.findall(r"[a-zà-ÿ]+", text.lower())
+    counts = {lang: sum(w in vocab for w in words) for lang, vocab in _LANG_WORDS.items()}
+    lang, hits = max(counts.items(), key=lambda kv: kv[1])
+    return lang if hits >= 3 else "Não identificado"
+
+
 def _is_remote(place: str, description: str) -> bool:
-    keywords = ("remote", "remoto", "home office", "anywhere")
+    keywords = ("remote", "remoto", "home office", "anywhere", "teletrabajo", "télétravail")
     combined = (place + " " + description).lower()
     return any(kw in combined for kw in keywords)

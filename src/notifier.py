@@ -26,7 +26,10 @@ def _build_message(job: dict, score: int, breakdown: dict) -> str:
     stars = "⭐" * (score // 20)
     remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {_esc(job.get('location') or '?')}"
     if job.get("international"):
-        remote_tag = f"🌎 Internacional \\(remoto\\) — {_esc(job.get('location') or '?')}"
+        remote_tag = (
+            f"🌎 Internacional \\(remoto\\) — {_esc(job.get('location') or '?')}\n"
+            f"🗣 Idioma: {_esc(job.get('language') or 'Não identificado')}"
+        )
 
     salary_txt = ""
     if job.get("salary"):

@@ -24,9 +24,13 @@ def init():
         """)
 
 
-def seen(job_id: str) -> bool:
+def seen(job_id: str, title: str = "", company: str = "") -> bool:
+    """Já enviada? Pelo ID ou pelo par título + empresa (vagas repostadas)."""
     with _conn() as con:
-        row = con.execute("SELECT 1 FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        row = con.execute(
+            "SELECT 1 FROM jobs WHERE id = ? OR (lower(title) = ? AND lower(company) = ?)",
+            (job_id, title, company),
+        ).fetchone()
     return row is not None
 
 
