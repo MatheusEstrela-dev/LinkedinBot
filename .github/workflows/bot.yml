@@ -2,7 +2,7 @@ name: LinkedIn Job Bot
 
 on:
   schedule:
-    - cron: '0 13,19 * * *'  # 10h e 16h de Brasília (13h e 19h UTC) todo dia
+    - cron: '0 0,12,18 * * *'  # 9h, 15h e 21h de Brasília (12h, 18h e 0h UTC) todo dia
   workflow_dispatch:           # permite rodar manualmente pelo GitHub
 
 permissions:
