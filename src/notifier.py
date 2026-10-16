@@ -24,7 +24,9 @@ def _get_chat_id() -> str:
 
 def _build_message(job: dict, score: int, breakdown: dict) -> str:
     stars = "⭐" * (score // 20)
-    remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {job.get('location', '?')}"
+    remote_tag = "🌐 Remoto" if job.get("remote") else f"📍 {_esc(job.get('location') or '?')}"
+    if job.get("international"):
+        remote_tag = f"🌎 Internacional \\(remoto\\) — {_esc(job.get('location') or '?')}"
 
     salary_txt = ""
     if job.get("salary"):

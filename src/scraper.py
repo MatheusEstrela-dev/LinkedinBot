@@ -116,8 +116,36 @@ def fetch_jobs(profile: dict) -> list[dict]:
                 job["remote"] = _is_remote(job["location"], job["description"])
                 results.append(job)
 
+    intl = profile.get("international") or {}
+    if intl.get("enabled"):
+        results.extend(_fetch_international(intl, profile, exp_filters, {j["id"] for j in results}))
+
     logger.info("Scraper encontrou %d vagas no total", len(results))
     return results
+
+
+def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) -> list[dict]:
+    """Vagas remotas fora do Brasil, via API pública (termos em inglês)."""
+    from . import guest_scraper
+
+    params = {
+        "f_TPR": "r604800",
+        "f_E": ",".join(f.value for f in exp_filters),
+        "f_WT": OnSiteOrRemoteFilters.REMOTE.value,
+    }
+    found: list[dict] = []
+    for role in intl.get("roles") or profile.get("target_roles", []):
+        for location in intl.get("locations", ["Worldwide"]):
+            for job in guest_scraper.search(role, location, params, limit=intl.get("limit", 15)):
+                if job["id"] in seen_ids:
+                    continue
+                seen_ids.add(job["id"])
+                job["salary"] = _extract_salary(job["description"])
+                job["remote"] = True
+                job["international"] = True
+                found.append(job)
+    logger.info("Busca internacional: %d vagas", len(found))
+    return found
 
 
 def _extract_salary(description: str) -> tuple[int, int] | None:

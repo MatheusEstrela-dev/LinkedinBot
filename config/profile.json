@@ -30,6 +30,12 @@
   "min_salary": 5000,
   "max_salary": 9000,
   "min_score": 50,
+  "international": {
+    "enabled": true,
+    "roles": ["Python Developer", "Laravel Developer", "Full Stack Developer"],
+    "locations": ["Worldwide", "Latin America"],
+    "limit": 15
+  },
   "experience": [
     {
       "title": "Desenvolvedor Full Stack",
