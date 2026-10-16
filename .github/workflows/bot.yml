@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 9,15,21 * * *'  # roda às 9h, 15h e 21h (UTC) todo dia
   workflow_dispatch:             # permite rodar manualmente pelo GitHub
+  push:
+    branches: [claude/telegram-job-listings-issue-BYQIt]  # temporário: testar o fix
 
 permissions:
   contents: read
