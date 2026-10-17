@@ -188,7 +188,10 @@ O salário é lido da descrição, só nestes formatos:
 
 ---
 
-## 5. Alertas no Telegram
+## 5. Resumo e alertas no Telegram
+
+No fim de **toda** execução chega um resumo — "✅ N vagas novas enviadas" ou
+"🔎 nenhuma nova acima do score mínimo" — para você saber que o bot rodou.
 
 Além das vagas, o bot manda **⚠️ aviso** quando:
 
