@@ -188,7 +188,10 @@ O salário é lido da descrição, só nestes formatos:
 
 ---
 
-## 5. Alertas no Telegram
+## 5. Resumo e alertas no Telegram
+
+No fim de **toda** execução chega um resumo — "✅ N vagas novas enviadas" ou
+"🔎 nenhuma nova acima do score mínimo" — para você saber que o bot rodou.
 
 Além das vagas, o bot manda **⚠️ aviso** quando:
 
@@ -207,6 +210,7 @@ Tudo em `config/profile.json`:
 | Buscar outros cargos | edite `target_roles` |
 | Pontuar mais alto em skills | deixe em `skills` só o que é essencial |
 | Mudar faixa salarial | `min_salary` / `max_salary` |
+| Limitar o tempo da busca (padrão 15 min) | `search_budget_minutes` |
 | Desligar vagas internacionais | `"international": { "enabled": false }` |
 | Mudar países/regiões internacionais | `international.locations` (ex.: `"United States"`, `"European Union"`) |
 

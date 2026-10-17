@@ -84,6 +84,19 @@ def send_alert(text: str):
         logger.error("Telegram error ao enviar alerta: %s", exc)
 
 
+def send_summary(analyzed: int, notified: int):
+    """Resumo no fim de cada execução, para saber que o bot rodou mesmo sem vagas novas."""
+    if notified:
+        text = f"✅ Busca concluída: {notified} vaga(s) nova(s) enviada(s) de {analyzed} analisadas."
+    else:
+        text = (f"🔎 Busca concluída: {analyzed} vagas analisadas, nenhuma nova "
+                f"acima do score mínimo desta vez.")
+    try:
+        asyncio.run(_send_alert_async(text))
+    except Exception as exc:
+        logger.error("Telegram error ao enviar resumo: %s", exc)
+
+
 def send(job: dict, score: int, breakdown: dict):
     message = _build_message(job, score, breakdown)
     try:

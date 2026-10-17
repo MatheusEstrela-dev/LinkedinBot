@@ -57,6 +57,8 @@ def run_pipeline():
             notified += 1
 
     logger.info("Pipeline done. Notified: %d / %d", notified, len(jobs))
+    if jobs:
+        notifier.send_summary(len(jobs), notified)
 
 
 def main():

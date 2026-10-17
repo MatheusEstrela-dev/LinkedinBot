@@ -109,8 +109,10 @@ def fetch_jobs(profile: dict) -> list[dict]:
                 logger.error("Erro ao buscar '%s': %s", role, exc)
                 break
 
+    from . import guest_scraper
+    guest_scraper.start_budget(profile.get("search_budget_minutes", 15) * 60)
+
     if not results:
-        from . import guest_scraper
         params = {"f_TPR": "r604800", "f_E": ",".join(f.value for f in exp_filters)}
         if remote_filters:
             params["f_WT"] = ",".join(f.value for f in remote_filters)
