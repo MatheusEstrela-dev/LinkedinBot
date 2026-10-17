@@ -154,7 +154,7 @@ O salário é lido da descrição, só nestes formatos:
 
 ## 4. Quem recebe notificação
 
-- Só vagas com **score ≥ `min_score`** (hoje **50**) vão para o Telegram.
+- Só vagas com **score ≥ `min_score`** (hoje **45**) vão para o Telegram.
 - Cada vaga enviada é salva em `data/jobs.db` e **nunca é reenviada**.
   Conta como a mesma vaga: mesmo ID **ou** mesmo título + empresa (empresas que
   repostam a vaga em vários países com IDs diferentes).
@@ -180,11 +180,11 @@ O salário é lido da descrição, só nestes formatos:
 | Score | Interpretação |
 |---|---|
 | 70+ | Match forte (nível certo, remota/BH e várias skills em comum) |
-| 50–69 | Match razoável — **enviada** |
-| < 50 | Descartada (geralmente nível errado ou poucas skills) |
+| 45–69 | Match razoável — **enviada** |
+| < 45 | Descartada (geralmente nível errado ou poucas skills) |
 
 > Um detalhe: uma vaga **sênior**, remota, sem salário, ganha 15 + 20 + 5 = 40
-> só de base. Bastam ~5 skills em comum (11 pts) para passar dos 50.
+> só de base. Bastam ~3 skills em comum (7 pts) para passar dos 45.
 
 ---
 
