@@ -5,6 +5,8 @@ import os
 from telegram import Bot
 from telegram.constants import ParseMode
 
+from . import compensation
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,10 +33,10 @@ def _build_message(job: dict, score: int, breakdown: dict) -> str:
             f"🗣 Idioma: {_esc(job.get('language') or 'Não identificado')}"
         )
 
+    contract_txt = f"\n📝 Contrato: {_esc(job.get('contract') or 'Não informado')}"
     salary_txt = ""
     if job.get("salary"):
-        lo, hi = job["salary"]
-        salary_txt = f"\n💰 R$ {lo:,.0f} – R$ {hi:,.0f}"
+        salary_txt = f"\n💰 {_esc(compensation.format_salary(job['salary']))}"
 
     matched = breakdown.get("matched_skills") or []
     missing = breakdown.get("missing_skills") or []
@@ -48,7 +50,7 @@ def _build_message(job: dict, score: int, breakdown: dict) -> str:
     return (
         f"{stars} *Score: {score}/100*\n"
         f"💼 {_esc(job['title'])} — {_esc(job['company'])}\n"
-        f"{remote_tag}{salary_txt}\n"
+        f"{remote_tag}{contract_txt}{salary_txt}\n"
         f"🔗 [Ver vaga]({job['link']})"
         f"{skills_txt}"
     )

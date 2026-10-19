@@ -80,25 +80,34 @@ def _parse_cards(page: str) -> list[dict]:
             "title":    _first(r'class="base-search-card__title[^"]*"[^>]*>(.*?)</h3>', card),
             "company":  _first(r'class="base-search-card__subtitle[^"]*"[^>]*>(.*?)</h4>', card),
             "location": _first(r'class="job-search-card__location[^"]*"[^>]*>(.*?)</span>', card),
+            "salary_text": _first(r'class="job-search-card__salary-info[^"]*"[^>]*>(.*?)</span>', card),
             "link":     html.unescape(link.group(1)).split("?")[0] if link else
                         f"https://www.linkedin.com/jobs/view/{job_id.group(1)}",
         })
     return jobs
 
 
-def _fetch_description(job_id: str) -> str:
+def _fetch_details(job_id: str) -> tuple[str, str]:
+    """(descrição, tipo de emprego) da página da vaga — ex.: 'Full-time', 'Contract'."""
     if _time_left() <= 0:
-        return ""
+        return "", ""
     try:
         page = _get(_DETAIL_URL.format(job_id=job_id), retries=1)
     except Exception as exc:
         logger.warning("Sem descrição para vaga %s: %s", job_id, exc)
-        return ""
-    return _first(r'class="show-more-less-html__markup[^"]*"[^>]*>(.*?)</div>', page)
+        return "", ""
+    description = _first(r'class="show-more-less-html__markup[^"]*"[^>]*>(.*?)</div>', page)
+    employment = ""
+    for header, value in re.findall(
+        r'description__job-criteria-subheader[^>]*>(.*?)</h3>\s*<span[^>]*>(.*?)</span>', page, re.S
+    ):
+        if _text(header).lower() in ("employment type", "tipo de emprego"):
+            employment = _text(value)
+    return description, employment
 
 
 def search(role: str, location: str, params: dict, limit: int = 25) -> list[dict]:
-    """Retorna vagas no formato {id, title, company, location, link, description}."""
+    """Retorna vagas: {id, title, company, location, link, salary_text, description, employment_type}."""
     found: list[dict] = []
     if _time_left() <= 0:
         logger.warning("[guest] prazo da busca esgotado — pulando '%s' (%s)", role, location)
@@ -119,7 +128,7 @@ def search(role: str, location: str, params: dict, limit: int = 25) -> list[dict
 
     found = found[:limit]
     for job in found:
-        job["description"] = _fetch_description(job["id"])
+        job["description"], job["employment_type"] = _fetch_details(job["id"])
         time.sleep(1.5)
 
     logger.info("[guest] '%s': %d vagas", role, len(found))

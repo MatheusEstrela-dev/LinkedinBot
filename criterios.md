@@ -139,16 +139,23 @@ Uma vaga é marcada como **remota** se o local **ou a descrição** contiver
 
 ### 3.4 Salário — até 10 pontos
 
-O salário é lido da descrição, só nestes formatos:
-`R$ 5.000 - R$ 8.000`, `R$ 5.000 a R$ 8.000`, `5.000 – 8.000 BRL/reais`.
+O salário vem do campo de salário do LinkedIn (quando existe) ou da descrição
+(`src/compensation.py`). Formatos reconhecidos:
+
+- Moedas: **R$ / BRL / reais**, **US$ / USD / $**, **€ / EUR**, **£ / GBP**
+- Faixa ou valor único: `R$ 5.000 a R$ 7.500`, `$60,000 - $80,000`, `USD 4k-5k`, `R$ 8 mil`
+- Período: **/hora**, **/mês**, **/ano** (ex.: "per year", "mensais", "/hr")
+
+Valores em outra moeda são **convertidos para real** pela cotação do dia
+(frankfurter.dev, com open.er-api.com de reserva). Para o score, a faixa vira
+**reais por mês** (ano ÷ 12, hora × 160 horas).
 
 | Situação | Pontos |
 |---|---:|
-| Faixa da vaga cruza com `min_salary`–`max_salary` (5.000–9.000) | **10** |
-| Vaga não informa salário (a maioria) | **5** (neutro) |
-| Faixa totalmente fora da sua | **0** |
+| Faixa mensal em reais alcança o seu mínimo (`min_salary` = 5.000) — dentro da faixa ou acima | **10** |
+| Vaga não informa salário (a maioria) ou cotação indisponível | **5** (neutro) |
+| Paga menos que o seu mínimo | **0** |
 
-> Salários em dólar/euro (vagas internacionais) não são lidos → ficam com 5 (neutro).
 
 ---
 
@@ -188,7 +195,23 @@ O salário é lido da descrição, só nestes formatos:
 
 ---
 
-## 5. Resumo e alertas no Telegram
+## 5. Formato da mensagem
+
+```
+⭐⭐⭐ Score: 62/100
+💼 Desenvolvedor Pleno — ACME
+🌐 Remoto                         (ou 📍 cidade / 🌎 Internacional + 🗣 idioma)
+📝 Contrato: PJ                   (CLT, PJ, CLT ou PJ, Freelance, Estágio… ou "Não informado")
+💰 US$ 4.000 – 5.000/mês (≈ R$ 21.600 – 27.000/mês)   (só aparece se a vaga informar)
+🔗 Ver vaga
+✅ Skills… / ❌ Faltando…
+```
+
+O **contrato** é detectado por palavras na vaga (CLT, carteira assinada, PJ,
+pessoa jurídica, contractor, B2B, freelance, estágio, cooperado) ou pelo
+"tipo de emprego" do LinkedIn (*Contract* → PJ).
+
+## 6. Resumo e alertas no Telegram
 
 No fim de **toda** execução chega um resumo — "✅ N vagas novas enviadas" ou
 "🔎 nenhuma nova acima do score mínimo" — para você saber que o bot rodou.
@@ -199,7 +222,7 @@ Além das vagas, o bot manda **⚠️ aviso** quando:
 
 ---
 
-## 6. Como ajustar (cola rápida)
+## 7. Como ajustar (cola rápida)
 
 Tudo em `config/profile.json`:
 
