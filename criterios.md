@@ -162,6 +162,10 @@ Valores em outra moeda são **convertidos para real** pela cotação do dia
 ## 4. Quem recebe notificação
 
 - Só vagas com **score ≥ `min_score`** (hoje **45**) vão para o Telegram.
+- **Exceção — empresas em destaque** (`highlight_companies`, hoje **Nubank**):
+  qualquer vaga delas é enviada, **mesmo abaixo do score**, com a etiqueta
+  **🔥 DESTAQUE** no topo da mensagem. A comparação é pelo nome da empresa
+  (contém o texto, sem diferenciar maiúsculas).
 - Cada vaga enviada é salva em `data/jobs.db` e **nunca é reenviada**.
   Conta como a mesma vaga: mesmo ID **ou** mesmo título + empresa (empresas que
   repostam a vaga em vários países com IDs diferentes).
@@ -198,6 +202,7 @@ Valores em outra moeda são **convertidos para real** pela cotação do dia
 ## 5. Formato da mensagem
 
 ```
+🔥 DESTAQUE — Nubank              (só para empresas em highlight_companies)
 ⭐⭐⭐ Score: 62/100
 💼 Desenvolvedor Pleno — ACME
 🌐 Remoto                         (ou 📍 cidade / 🌎 Internacional + 🗣 idioma)
@@ -234,6 +239,7 @@ Tudo em `config/profile.json`:
 | Pontuar mais alto em skills | deixe em `skills` só o que é essencial |
 | Mudar faixa salarial | `min_salary` / `max_salary` |
 | Limitar o tempo da busca (padrão 15 min) | `search_budget_minutes` |
+| Destacar outras empresas | `highlight_companies` (ex.: `["Nubank", "iFood"]`) |
 | Desligar vagas internacionais | `"international": { "enabled": false }` |
 | Mudar países/regiões internacionais | `international.locations` (ex.: `"United States"`, `"European Union"`) |
 

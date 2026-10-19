@@ -30,6 +30,7 @@
   "min_salary": 5000,
   "max_salary": 9000,
   "min_score": 45,
+  "highlight_companies": ["Nubank"],
   "international": {
     "enabled": true,
     "roles": ["Python Developer", "Laravel Developer", "Full Stack Developer"],
