@@ -47,7 +47,10 @@ def _build_message(job: dict, score: int, breakdown: dict) -> str:
     if missing:
         skills_txt += f"\n❌ Faltando: {', '.join(missing)}"
 
+    highlight_txt = f"🔥 *DESTAQUE — {_esc(job['company'])}*\n" if job.get("highlight") else ""
+
     return (
+        f"{highlight_txt}"
         f"{stars} *Score: {score}/100*\n"
         f"💼 {_esc(job['title'])} — {_esc(job['company'])}\n"
         f"{remote_tag}{contract_txt}{salary_txt}\n"

@@ -31,6 +31,7 @@ def load_profile() -> dict:
 def run_pipeline():
     profile = load_profile()
     min_score = profile.get("min_score", 50)
+    highlight = [c.lower() for c in profile.get("highlight_companies", [])]
 
     logger.info("Starting pipeline...")
     jobs = scraper.fetch_jobs(profile)
@@ -49,9 +50,12 @@ def run_pipeline():
         seen_titles.add(title_key)
 
         total, breakdown = matcher.score(job, profile)
-        logger.info("  [%3d] %s — %s", total, job["title"], job["company"])
+        # Empresas em destaque são sempre enviadas, mesmo abaixo do score mínimo.
+        job["highlight"] = any(c in job["company"].lower() for c in highlight)
+        logger.info("  [%3d]%s %s — %s", total, " 🔥" if job["highlight"] else "",
+                    job["title"], job["company"])
 
-        if total >= min_score:
+        if total >= min_score or job["highlight"]:
             database.save(job, total)
             notifier.send(job, total, breakdown)
             notified += 1

@@ -122,12 +122,33 @@ def fetch_jobs(profile: dict) -> list[dict]:
                 job["remote"] = _is_remote(job["location"], job["description"])
                 results.append(job)
 
+    seen_ids = {j["id"] for j in results}
+    for company in profile.get("highlight_companies", []):
+        results.extend(_fetch_company(company, seen_ids))
+
     intl = profile.get("international") or {}
     if intl.get("enabled"):
         results.extend(_fetch_international(intl, profile, exp_filters, {j["id"] for j in results}))
 
     logger.info("Scraper encontrou %d vagas no total", len(results))
     return results
+
+
+def _fetch_company(company: str, seen_ids: set) -> list[dict]:
+    """Busca dedicada a uma empresa em destaque: qualquer cargo, nível ou modalidade."""
+    from . import guest_scraper
+
+    found: list[dict] = []
+    for job in guest_scraper.search(company, "Brazil", {"f_TPR": "r604800"}):
+        # A busca por palavra-chave também traz outras empresas que citam o nome.
+        if company.lower() not in job["company"].lower() or job["id"] in seen_ids:
+            continue
+        seen_ids.add(job["id"])
+        _add_compensation(job)
+        job["remote"] = _is_remote(job["location"], job["description"])
+        found.append(job)
+    logger.info("Busca dedicada '%s': %d vagas", company, len(found))
+    return found
 
 
 def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) -> list[dict]:
