@@ -47,9 +47,9 @@ def fetch_jobs(profile: dict) -> list[dict]:
             "location":    data.place,
             "description": data.description,
             "link":        data.link,
-            "salary":      _extract_salary(data.description),
             "remote":      _is_remote(data.place, data.description),
         })
+        _add_compensation(results[-1])
 
     def on_error(err):
         logger.error("Scraper error: %s", err)
@@ -118,7 +118,7 @@ def fetch_jobs(profile: dict) -> list[dict]:
             params["f_WT"] = ",".join(f.value for f in remote_filters)
         for role in profile.get("target_roles", []):
             for job in guest_scraper.search(role, locations[0], params):
-                job["salary"] = _extract_salary(job["description"])
+                _add_compensation(job)
                 job["remote"] = _is_remote(job["location"], job["description"])
                 results.append(job)
 
@@ -150,7 +150,7 @@ def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) 
                 text = f"{job['title']} {job['location']} {job['description']}".lower()
                 if "hybrid" in text or "híbrid" in text or not _is_remote(text, ""):
                     continue
-                job["salary"] = _extract_salary(job["description"])
+                _add_compensation(job)
                 job["language"] = _detect_language(f"{job['title']} {job['description']}")
                 job["remote"] = True
                 job["international"] = True
@@ -159,19 +159,14 @@ def _fetch_international(intl: dict, profile: dict, exp_filters, seen_ids: set) 
     return found
 
 
-def _extract_salary(description: str) -> tuple[int, int] | None:
-    import re
-    patterns = [
-        r"R\$\s*([\d\.]+)\s*[-–a]\s*R\$\s*([\d\.]+)",
-        r"([\d\.]+)\s*[-–]\s*([\d\.]+)\s*(?:BRL|reais)",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, description, re.IGNORECASE)
-        if match:
-            lo = int(match.group(1).replace(".", ""))
-            hi = int(match.group(2).replace(".", ""))
-            return (lo, hi)
-    return None
+def _add_compensation(job: dict) -> None:
+    """Preenche salário (moeda original + faixa mensal em reais) e tipo de contrato."""
+    from . import compensation
+    text = f"{job.get('title', '')}\n{job.get('description', '')}"
+    job["salary"] = (compensation.extract_salary(job.get("salary_text", ""))
+                     or compensation.extract_salary(text))
+    job["salary_brl"] = compensation.monthly_brl(job["salary"])
+    job["contract"] = compensation.detect_contract(text, job.get("employment_type", ""))
 
 
 _LANG_WORDS = {

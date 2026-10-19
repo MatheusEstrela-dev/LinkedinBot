@@ -87,7 +87,7 @@ def _score_location(job: dict, profile: dict) -> int:
 
 
 def _score_salary(job: dict, profile: dict) -> int:
-    salary = job.get("salary")
+    salary = job.get("salary_brl")  # faixa mensal já convertida para reais
     min_s = profile.get("min_salary")
     max_s = profile.get("max_salary")
 
@@ -95,6 +95,6 @@ def _score_salary(job: dict, profile: dict) -> int:
         return 5  # sem informação — neutro
 
     lo, hi = salary
-    if lo <= max_s and hi >= min_s:
+    if hi >= min_s:  # dentro da faixa ou pagando acima dela
         return 10
-    return 0
+    return 0         # paga menos do que o mínimo
