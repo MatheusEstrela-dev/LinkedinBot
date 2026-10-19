@@ -13,6 +13,7 @@ GitHub Actions (9h07, 15h07, 21h07 de Brasília)
         ▼
 main.py ──► scraper.py ──► busca vagas no LinkedIn
         │                    ├─ API pública do LinkedIn (guest_scraper.py) — sem login
+        │                    ├─ busca dedicada às empresas em destaque (Nubank)
         │                    └─ busca internacional (se "international.enabled")
         ▼
    para cada vaga:
@@ -166,6 +167,10 @@ Valores em outra moeda são **convertidos para real** pela cotação do dia
   qualquer vaga delas é enviada, **mesmo abaixo do score**, com a etiqueta
   **🔥 DESTAQUE** no topo da mensagem. A comparação é pelo nome da empresa
   (contém o texto, sem diferenciar maiúsculas).
+- Além disso, cada execução faz uma **busca dedicada** por empresa em destaque
+  (no Brasil, última semana, **qualquer cargo, nível ou modalidade**), para não
+  depender de a vaga aparecer nas buscas por cargo. Ela roda logo depois das
+  buscas no Brasil e antes das internacionais.
 - Cada vaga enviada é salva em `data/jobs.db` e **nunca é reenviada**.
   Conta como a mesma vaga: mesmo ID **ou** mesmo título + empresa (empresas que
   repostam a vaga em vários países com IDs diferentes).
